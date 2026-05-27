@@ -1,0 +1,30 @@
+version: "0.1.0"
+harnessRef: team-harness@main
+ide: cursor
+ides:
+  - cursor
+stacks:
+  - global
+  - git
+  - golang
+features:
+  precommit: true
+  ci: github
+  skills: false
+  skeleton: true
+  commands: false
+  agents: false
+project:
+  name: my-service
+  description: Example microservice
+  primaryStack: golang
+installed:
+  - path: .cursor/rules/engineering.mdc
+    source: rules/global/engineering.mdc
+    kind: rule
+  - path: .cursor/rules/git.mdc
+    source: rules/global/git.mdc
+    kind: rule
+  - path: AGENTS.md
+    source: generated:agents
+    kind: agents

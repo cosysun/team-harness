@@ -1,0 +1,123 @@
+{
+  "stacks": {
+    "global": {
+      "label": "Global engineering standards",
+      "always": true,
+      "rules": ["rules/global/engineering.mdc"]
+    },
+    "git": {
+      "label": "Git workflow and commits",
+      "always": true,
+      "rules": ["rules/global/git.mdc"]
+    },
+    "golang": {
+      "label": "Go",
+      "detect": ["go.mod", "go.work"],
+      "rules": [
+        "rules/stacks/golang/architecture.mdc",
+        "rules/stacks/golang/go.mdc"
+      ]
+    },
+    "python": {
+      "label": "Python",
+      "detect": ["pyproject.toml", "requirements.txt", "setup.py"],
+      "rules": [
+        "rules/stacks/python/python.mdc",
+        "rules/stacks/python/fastapi.mdc",
+        "rules/stacks/python/pytest.mdc"
+      ]
+    },
+    "frontend": {
+      "label": "Frontend (TypeScript/JavaScript)",
+      "detect": ["package.json"],
+      "rules": ["rules/stacks/frontend/typescript.mdc"]
+    },
+    "docker": {
+      "label": "Docker",
+      "detect": ["Dockerfile", "docker-compose.yml", "docker-compose.yaml"],
+      "rules": ["rules/stacks/docker/docker.mdc"]
+    },
+    "zsh": {
+      "label": "Shell scripts (Zsh)",
+      "detect": [],
+      "optional": true,
+      "rules": ["rules/stacks/zsh/zsh.mdc"]
+    }
+  },
+  "features": {
+    "precommit": {
+      "label": "Pre-commit hooks",
+      "files": ["scaffold/pre-commit/.pre-commit-config.yaml"]
+    },
+    "ci": {
+      "label": "GitHub Actions CI",
+      "files": ["scaffold/ci/.github/workflows/ci.yml"]
+    },
+    "skills": {
+      "label": "Skills directory placeholder",
+      "files": ["scaffold/skills/README.md"]
+    },
+    "skeleton": {
+      "label": "Basic docs/scripts directories",
+      "files": [
+        "scaffold/skeleton/docs/.gitkeep",
+        "scaffold/skeleton/scripts/.gitkeep"
+      ]
+    },
+    "commands": {
+      "label": "Starter slash commands (review, ship, debug)",
+      "ides": ["cursor", "codebuddy", "claude"],
+      "files": [
+        "scaffold/workflows/commands/review.md",
+        "scaffold/workflows/commands/ship.md",
+        "scaffold/workflows/commands/debug.md"
+      ]
+    },
+    "agents": {
+      "label": "Starter subagents (explore, code-reviewer)",
+      "ides": ["cursor", "codebuddy", "claude"],
+      "files": [
+        "scaffold/workflows/agents/explore.md",
+        "scaffold/workflows/agents/code-reviewer.md"
+      ]
+    }
+  },
+  "ides": {
+    "cursor": {
+      "label": "Cursor",
+      "rulesDir": ".cursor/rules",
+      "rulesFormat": "mdc",
+      "planDir": ".cursor/plan",
+      "skillsDir": ".cursor/skills",
+      "commandsDir": ".cursor/commands",
+      "agentsDir": ".cursor/agents",
+      "contextFiles": ["AGENTS.md"]
+    },
+    "codebuddy": {
+      "label": "CodeBuddy",
+      "rulesDir": ".codebuddy/rules",
+      "rulesFormat": "mdc",
+      "planDir": ".codebuddy/plan",
+      "skillsDir": ".codebuddy/skills",
+      "commandsDir": ".codebuddy/commands",
+      "agentsDir": ".codebuddy/agents",
+      "contextFiles": ["AGENTS.md"]
+    },
+    "claude": {
+      "label": "Claude Code",
+      "rulesDir": ".claude/rules",
+      "rulesFormat": "md",
+      "planDir": ".claude/plan",
+      "skillsDir": ".claude/skills",
+      "commandsDir": ".claude/commands",
+      "agentsDir": ".claude/agents",
+      "contextFiles": ["CLAUDE.md", ".claude/CLAUDE.md"]
+    },
+    "codex": {
+      "label": "OpenAI Codex CLI",
+      "rulesFormat": "mdc",
+      "contextFiles": ["AGENTS.md"],
+      "configFiles": [".codex/config.toml"]
+    }
+  }
+}

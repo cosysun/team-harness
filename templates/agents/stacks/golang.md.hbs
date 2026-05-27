@@ -1,0 +1,15 @@
+## Go 服务架构
+
+- 分层架构：**Controller → Service → Repository → Model**
+- 目录约定（可按项目调整）：
+  - `internal/` — 业务逻辑
+  - `pkg/` — 可复用库
+  - `api/` — API 定义（Proto / OpenAPI）
+  - `configs/` — 配置
+  - `scripts/` — 工具脚本
+
+## 常用命令
+
+- 编译：`go build ./...`
+- 测试：`go test ./...`
+- Lint：`golangci-lint run`

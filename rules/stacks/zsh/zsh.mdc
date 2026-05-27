@@ -1,6 +1,6 @@
 ---
 description: This guide defines the definitive best practices for writing Zsh scripts and configuration files, ensuring consistency, robustness, and maintainability across our projects.
-globs: **/*
+globs: "**/*.{sh,zsh}"
 ---
 # zsh Best Practices
 

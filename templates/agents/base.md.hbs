@@ -1,0 +1,40 @@
+# AI 开发助手说明书
+
+## 项目概述
+
+本项目是 **{{projectName}}**。{{#if projectDescription}}{{projectDescription}}{{else}}（请补充项目简介）{{/if}}
+
+## 技术栈
+
+已启用的 harness stacks：`{{#each stacks}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}`
+
+## 架构说明
+
+- 详细架构文档：参见 `docs/ARCHITECTURE.md`
+- 活跃需求与计划：参见 `{{planPath}}`
+
+{{{stackSection}}}
+
+## 开发规范
+
+{{#if hasMdcRules}}
+- **Cursor / CodeBuddy**：`{{mdcRulesPath}}/`（`engineering.mdc`、`git.mdc` 及各栈 `.mdc`）
+{{/if}}
+{{#if hasClaude}}
+- **Claude Code**：`{{claudeRulesPath}}/*.md`（由 harness 从 `.mdc` 转换）；总览见根目录 `CLAUDE.md`
+{{/if}}
+{{#if hasCodex}}
+- **Codex CLI**：以根目录 `AGENTS.md` 为指令链；项目配置见 `.codex/config.toml`
+{{/if}}
+
+## 开发行为
+
+1. 变更前先阅读现有代码，优先复用已有模块。
+2. 保持 PR 范围最小，一次只解决一个问题。
+3. 新功能需附带相应测试（按项目栈的测试框架）。
+4. 敏感配置使用环境变量或密钥管理，禁止硬编码。
+
+## 注意事项
+
+- 修改架构或工作流时，同步更新本文件与 `docs/ARCHITECTURE.md`。
+- 数据库结构变更优先使用迁移脚本，并在合并前经过审查。
