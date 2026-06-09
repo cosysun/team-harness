@@ -1,0 +1,4 @@
+{
+  "_comment": "Per-repo MCP server configuration. Replace the example placeholders with real tokens. The init script copies this template into a business repo's .mcp.json only if .mcp.json does not already exist — your edits are preserved on re-run.",
+  "mcpServers": {}
+}

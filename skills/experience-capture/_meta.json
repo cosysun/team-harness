@@ -1,0 +1,7 @@
+{
+  "name": "experience-capture",
+  "version": "0.1.0",
+  "category": "harness",
+  "description": "Seven-perspective self-audit at end of turn; appends to experiences.jsonl; proposes promotions to knowledge/rule-draft/skill-draft.",
+  "permanent": true
+}

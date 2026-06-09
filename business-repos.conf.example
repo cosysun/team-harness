@@ -1,0 +1,13 @@
+# business-repos.conf — list of business-repo absolute paths to batch-onboard.
+#
+# Used by `bash scripts/init-business-repo.sh` when run from the central repo
+# root (Mode A). One path per line; blank lines and `#`-prefixed comments are
+# ignored. `~` and relative paths are expanded with `eval`.
+#
+# Copy this file to `business-repos.conf` (without the `.example` suffix) and
+# fill in your own paths. The real `business-repos.conf` is .gitignored.
+
+# Examples — replace with your own:
+# ~/work/order-service
+# ~/work/pricing-service
+# /Users/me/code/inventory-service
