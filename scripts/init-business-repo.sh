@@ -16,8 +16,15 @@
 #   2. .mcp.json fallback (copy if missing — only step that copies anything)
 #   3. five .claude/* directory symlinks (rules, skills, hooks, commands, knowledge)
 #   4. jq-merge hooks/settings.fragment.json into .claude/settings.json
-#   5. .git/hooks/post-merge symlink → scripts/post-merge.sh
-#   6. CLAUDE.md symlink → contexts/<repo-slug>/CLAUDE.md (rendered from template if missing)
+#   5. .git/hooks/{post-merge,pre-commit} symlinks
+#   6. clean up legacy CLAUDE.md symlink pointing into the (now removed) central
+#      contexts/ directory, if present
+#
+# CLAUDE.md is NOT managed by this script. Each business repo writes its own
+# CLAUDE.md as a real file. Earlier versions symlinked CLAUDE.md into a central
+# contexts/<slug>/ template; that template was 70% generic boilerplate that got
+# loaded into context every turn, so it was removed. Business repos now own
+# their own CLAUDE.md (or have none — both are valid).
 #
 # Final step prints a verification table; non-zero exit if any leg failed.
 
@@ -230,62 +237,45 @@ _link_git_hook() {
   log "  + .git/hooks/$name -> $target"
 }
 
-# --- step 6: CLAUDE.md per-repo context symlink -------------------------
-detect_repo_slug() {
-  local repo="$1" slug=""
-  if [[ -f "$repo/package.json" ]] && command -v node >/dev/null 2>&1; then
-    slug="$(node -e 'try{console.log(require(process.argv[1]).name||"")}catch{}' "$repo/package.json" 2>/dev/null || true)"
-  fi
-  if [[ -z "$slug" && -f "$repo/pyproject.toml" ]]; then
-    slug="$(grep -E '^name\s*=' "$repo/pyproject.toml" | head -1 | sed -E 's/.*=\s*"([^"]+)".*/\1/')"
-  fi
-  if [[ -z "$slug" && -f "$repo/go.mod" ]]; then
-    slug="$(awk '/^module / {print $2; exit}' "$repo/go.mod" | awk -F/ '{print $NF}')"
-  fi
-  if [[ -z "$slug" && -f "$repo/Cargo.toml" ]]; then
-    slug="$(grep -E '^name\s*=' "$repo/Cargo.toml" | head -1 | sed -E 's/.*=\s*"([^"]+)".*/\1/')"
-  fi
-  if [[ -z "$slug" ]]; then
-    slug="$(basename "$(realpath_portable "$repo")")"
-  fi
-  # Sanitize: lowercase, alphanumerics + dash + underscore only.
-  slug="$(printf '%s' "$slug" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9_-' '-' | sed -E 's/-+/-/g; s/^-//; s/-$//')"
-  printf '%s' "${slug:-unknown}"
-}
-
-step6_context_symlink() {
+# --- step 6: clean up legacy CLAUDE.md context symlink ------------------
+# Earlier versions of this script created CLAUDE.md as a symlink into
+# contexts/<slug>/ in the central repo. That central directory is gone, so any
+# such symlink is now broken. Detect and remove it (with a .bak backup if the
+# target somehow still exists). Real CLAUDE.md files in the business repo are
+# left alone — that's the new model.
+step6_cleanup_legacy_context_link() {
   local repo="$1"
-  log "step 6/6: CLAUDE.md context symlink in $repo"
-  local slug
-  slug="$(detect_repo_slug "$repo")"
-  local context_dir="$HARNESS_ROOT/contexts/$slug"
-  local context_file="$context_dir/CLAUDE.md"
+  log "step 6/6: cleanup legacy CLAUDE.md context symlink in $repo"
   local link_path="$repo/CLAUDE.md"
 
-  if [[ ! -f "$context_file" ]]; then
-    log "  rendering new context dir for slug '$slug'"
-    mkdir -p "$context_dir"
-    cp "$HARNESS_ROOT/contexts/_template/CLAUDE.md" "$context_file"
-    # Light substitution: replace {{REPO_NAME}} and {{REPO_PATH}} placeholders.
-    local repo_real
-    repo_real="$(realpath_portable "$repo")"
-    sed -i.bak \
-      -e "s|{{REPO_NAME}}|$slug|g" \
-      -e "s|{{REPO_PATH}}|$repo_real|g" \
-      "$context_file"
-    rm -f "$context_file.bak"
-  fi
-
-  if [[ -L "$link_path" ]] && [[ "$(realpath_portable "$link_path")" == "$(realpath_portable "$context_file")" ]]; then
-    log "  ✓ CLAUDE.md already linked"
+  # Not a symlink (real file, or missing) → nothing to do.
+  if [[ ! -L "$link_path" ]]; then
+    if [[ -f "$link_path" ]]; then
+      log "  ✓ CLAUDE.md is a real file (left alone)"
+    else
+      log "  • no CLAUDE.md present — write one when you have something to say"
+    fi
     return 0
   fi
-  if [[ -e "$link_path" ]]; then
-    warn "  CLAUDE.md exists in $repo; backing up to CLAUDE.md.bak"
-    mv "$link_path" "$link_path.bak"
-  fi
-  ln -s "$context_file" "$link_path"
-  log "  + CLAUDE.md -> $context_file"
+
+  # It's a symlink. Check whether it points into the (gone) central contexts/.
+  local target
+  target="$(readlink "$link_path")"
+  case "$target" in
+    *"/contexts/"*|*"/team-harness/contexts/"*)
+      warn "  CLAUDE.md is a legacy symlink into contexts/ (target: $target)"
+      if [[ -e "$link_path" ]]; then
+        # Target somehow still exists — keep its content as a .bak so the user can rescue it.
+        warn "  target still resolves; backing up resolved content to CLAUDE.md.bak"
+        cp "$link_path" "$link_path.bak" 2>/dev/null || true
+      fi
+      rm "$link_path"
+      log "  - removed broken legacy symlink. Write your own CLAUDE.md when ready."
+      ;;
+    *)
+      log "  ✓ CLAUDE.md symlink points outside contexts/; left alone"
+      ;;
+  esac
 }
 
 # --- verification --------------------------------------------------------
@@ -300,10 +290,12 @@ verify_repo() {
       printf '  ✗ .claude/%-10s MISSING\n' "$d"; failed=1
     fi
   done
-  if [[ -L "$repo/CLAUDE.md" ]] && [[ -f "$repo/CLAUDE.md" ]]; then
-    printf '  ✓ CLAUDE.md       -> %s\n' "$(realpath_portable "$repo/CLAUDE.md")"
+  if [[ -f "$repo/CLAUDE.md" && ! -L "$repo/CLAUDE.md" ]]; then
+    printf '  ✓ CLAUDE.md is a real per-repo file\n'
+  elif [[ -L "$repo/CLAUDE.md" ]]; then
+    printf '  ⚠ CLAUDE.md is a symlink (target: %s) — consider replacing with a real file\n' "$(readlink "$repo/CLAUDE.md")"
   else
-    printf '  ✗ CLAUDE.md       MISSING\n'; failed=1
+    printf '  • CLAUDE.md absent — write your own per-repo project self-portrait\n'
   fi
   if [[ -f "$repo/.claude/settings.json" ]] && jq -e '.hooks.PreToolUse' "$repo/.claude/settings.json" >/dev/null 2>&1; then
     printf '  ✓ .claude/settings.json has PreToolUse hooks\n'
@@ -344,7 +336,7 @@ onboard_one() {
   step3_claude_symlinks "$repo"
   step4_settings_merge "$repo"
   step5_post_merge_hook "$repo"
-  step6_context_symlink "$repo"
+  step6_cleanup_legacy_context_link "$repo"
   verify_repo "$repo"
 }
 

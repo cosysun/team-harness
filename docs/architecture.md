@@ -8,7 +8,7 @@ The design follows the article https://km.woa.com/articles/show/662361 — "cent
 
 | Pillar (article) | Layer | Implementation |
 |---|---|---|
-| **Context (上下文)** | L1 看得懂 | `rules/`, `knowledge/`, `contexts/` |
+| **Context (上下文)** | L1 看得懂 | `rules/`, `knowledge/`, business repo's own `CLAUDE.md` |
 | **Feedback (反馈)** | L2 学得会 | `skills/experience-capture/`, business repo `experiences.jsonl` |
 | **Constraint (约束)** | L3 拦得住 | `hooks/{pre-commit-guard,stop-experience-capture-check,post-edit-format}.sh` + `hooks/settings.fragment.json` |
 | **Constraint (约束)** | L4 验得了 | `commands/verify.md` + `hooks/pre-commit-guard.sh` GATE-3 / GATE-4 |
@@ -24,19 +24,22 @@ The two `Constraint` layers split into:
 central team-harness repo                    business repo
 ─────────────────────────                    ─────────────
                                              ./<source code>
+                                             ./CLAUDE.md          ← real file you write yourself
 rules/global/*.md        ← symlink ←        .claude/rules/
 skills/experience-capture/← symlink ←        .claude/skills/
 hooks/*.sh                ← symlink ←        .claude/hooks/
 commands/*.md             ← symlink ←        .claude/commands/
 knowledge/{r,d,c}/        ← symlink ←        .claude/knowledge/
-contexts/<slug>/CLAUDE.md ← symlink ←        ./CLAUDE.md
 hooks/settings.fragment.json    →    jq-merge   →    .claude/settings.json
 templates/.mcp.json.template    →    cp-once    →    .mcp.json
 scripts/post-merge.sh      ← symlink ←       .git/hooks/post-merge
+hooks/pre-commit-guard.sh  ← symlink ←       .git/hooks/pre-commit
                                              experiences.jsonl  ← created on first /ec-scan
 ```
 
-After onboarding, business repos do **not** edit anything under `.claude/` (those are the symlinks). They only edit `experiences.jsonl` (their own ledger), `.mcp.json` (their own tokens), and their actual source.
+After onboarding, business repos do **not** edit anything under `.claude/` (those are the symlinks). They edit their own `CLAUDE.md`, `experiences.jsonl` (their own ledger), `.mcp.json` (their own tokens), and their actual source.
+
+> Earlier versions of the harness symlinked `CLAUDE.md` into a per-slug directory under `contexts/` in the central repo. That indirection was removed: the template was 70% generic boilerplate that loaded into context every turn, and the symlink-to-template pattern made it tempting to edit shared content from inside a business repo. Each business repo now owns its `CLAUDE.md` as a real file.
 
 ## Data flow at runtime (an editing turn)
 
@@ -88,7 +91,7 @@ Every step in `init-business-repo.sh` is **guard-then-act**:
 - A symlink that already points to the right target is left alone.
 - A `.mcp.json` that exists is not overwritten.
 - A pre-existing `.claude/settings.json` is jq-merged, never clobbered (existing keys preserved; arrays appended).
-- A pre-existing `CLAUDE.md` is backed up to `CLAUDE.md.bak` before symlinking.
+- A real `CLAUDE.md` (non-symlink) is left alone. A legacy CLAUDE.md symlink that points into the (now removed) central `contexts/` directory is removed; if it somehow still resolves, its content is copied to `CLAUDE.md.bak` first.
 
 Re-running the script on a healthy repo does nothing visible. Re-running on a partially-initialized repo completes the missing legs.
 

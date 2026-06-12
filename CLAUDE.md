@@ -12,13 +12,13 @@ This is the **central harness repo** described in https://km.woa.com/articles/sh
 | **Add a new slash command** | Drop a `.md` in `commands/`. The filename minus `.md` becomes the command. |
 | **Add a new hook** | Drop a `.sh` in `hooks/` and add a binding to `hooks/settings.fragment.json`. Re-run init in each business repo to merge the new binding. |
 | **Add a new knowledge tier** | Don't (only three tiers, by design). Add an entry to `reference/`, `domain/`, or `constraints/` instead. |
+| **Edit a business repo's `CLAUDE.md`** | Don't do it from here — those files live in the business repos themselves now. The central harness used to symlink them via `contexts/<slug>/`; that indirection was removed. |
 | **Find the answer when nothing above helps** | Ask in chat. The article spends two pages making the case for "do not guess"; do not be the counter-example. |
 
 ## Layout
 
 ```
 team-harness/                       ← the central repo
-├── contexts/                       ← per-business-repo CLAUDE.md (one dir per repo slug)
 ├── rules/                          ← global + per-stack rule packs
 ├── knowledge/                      ← reference / domain / constraints
 ├── skills/                         ← experience-capture, find-skills, skill-creator
@@ -31,6 +31,8 @@ team-harness/                       ← the central repo
 ├── README.md
 └── CLAUDE.md                       ← (this file — for working *on* the central repo)
 ```
+
+`CLAUDE.md` files in business repos are **not** managed here. Each business repo owns its own as a real file. The init script will detect and clean up any legacy symlinks pointing at the (now-removed) `contexts/` directory.
 
 ## Working on this repo
 
@@ -56,7 +58,7 @@ There aren't formal tests yet — verification runs end-to-end in `/tmp/scratch-
 ```bash
 mkdir -p /tmp/scratch-biz && cd /tmp/scratch-biz && git init -q
 bash $HARNESS/scripts/init-business-repo.sh
-# inspect the symlinks, the merged .claude/settings.json, the rendered contexts/<slug>/CLAUDE.md
+# inspect the symlinks and the merged .claude/settings.json
 ```
 
 See `docs/getting-started.md` for the full smoke-test recipe.

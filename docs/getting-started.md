@@ -40,22 +40,45 @@ You should see output ending with a verification block like:
   ✓ .claude/hooks      -> /Users/you/work/team-harness/hooks
   ✓ .claude/commands   -> /Users/you/work/team-harness/commands
   ✓ .claude/knowledge  -> /Users/you/work/team-harness/knowledge
-  ✓ CLAUDE.md          -> /Users/you/work/team-harness/contexts/your-repo/CLAUDE.md
+  • CLAUDE.md absent — write your own per-repo project self-portrait
   ✓ .claude/settings.json has PreToolUse hooks
   ✓ .git/hooks/post-merge -> /Users/you/work/team-harness/scripts/post-merge.sh
+  ✓ .git/hooks/pre-commit -> /Users/you/work/team-harness/hooks/pre-commit-guard.sh
   • .mcp.json absent (optional)
 ```
 
-If any line shows ✗, the script also exits non-zero. Address the failure and re-run; the script is idempotent.
+The `•` markers are informational, not failures. CLAUDE.md is yours to write (next step). If any line shows ✗, the script also exits non-zero. Address the failure and re-run; the script is idempotent.
 
-## 3. Customize per-repo content
+## 3. Write your `CLAUDE.md`
 
-Two files are now yours to edit *in the central repo*:
+This file is the project's self-portrait. It loads into Claude's context every turn, so keep it short — three things only:
 
-- **`<central>/contexts/<your-slug>/CLAUDE.md`** — your per-repo project self-portrait. The first time you onboard, this is rendered from `contexts/_template/CLAUDE.md`. Fill in the project description, services, surprising facts.
-- **`<your-business-repo>/.mcp.json`** — your per-repo MCP server tokens. This stays in the business repo (it's the only file `init` *copies*).
+```markdown
+# <repo-name>
 
-You can also seed `.claude/knowledge/` (which symlinks to the central `knowledge/`) with project-specific entries — but those will be visible to every other business repo. For project-private knowledge, put it in your business repo at, e.g., `docs/knowledge/` and reference it from your `contexts/<slug>/CLAUDE.md`.
+## What this repo does
+(one paragraph, plain language — what does this codebase do, in user terms?)
+
+## Tech stack
+(language, framework, runtime versions — not the dependency list)
+
+## Surprising things to know
+- (3–5 things that bite new contributors — file naming traps, timezone
+   conventions, fields that look upstream-sourced but are actually back-filled)
+```
+
+Things you should **not** put here, because they live elsewhere:
+
+- Coding standards / git workflow → `.claude/rules/global/`
+- Field-level definitions, glossary → `.claude/knowledge/reference/`
+- "Don't change X here" rules → `.claude/knowledge/constraints/`
+- Hook descriptions → don't duplicate; the source is `.claude/hooks/` and `.claude/settings.json`
+
+If you have richer per-project knowledge worth sharing across repos (system landscape, data-flow walkthroughs, glossary), put it in `.claude/knowledge/` (which symlinks to the central repo). Project-private knowledge that should *not* leak to other repos belongs inside the business repo itself, e.g. `docs/knowledge/`, and you reference it from `CLAUDE.md`.
+
+Other per-repo edits:
+
+- **`.mcp.json`** — your per-repo MCP server tokens. This stays in the business repo (it's the only file `init` *copies*).
 
 ## 4. Verify the gates work
 

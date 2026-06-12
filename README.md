@@ -12,10 +12,11 @@ knowledge/    three-tier knowledge base: reference / domain / constraints
 skills/       experience-capture (the L2 evolution river), find-skills, skill-creator
 commands/     /verify and /ec-scan slash commands
 hooks/        five-layer gate scripts + the settings.fragment.json that wires them
-contexts/     per-business-repo CLAUDE.md (rendered on first onboard)
 templates/    .mcp.json template
 scripts/      init-business-repo.sh, post-merge.sh
 ```
+
+`CLAUDE.md` is **not** distributed from here — each business repo writes its own. The harness ships rules / hooks / knowledge / skills / commands; the project self-portrait is the one thing the central repo can't write for you.
 
 ## How a business repo onboards (60 seconds)
 
@@ -28,7 +29,7 @@ cd /path/to/your-business-repo
 bash ~/work/team-harness/scripts/init-business-repo.sh
 ```
 
-That's the whole onboarding. The script creates six symlinks under `.claude/`, jq-merges a hooks fragment into `.claude/settings.json`, drops a post-merge git hook, and renders a per-repo `CLAUDE.md` from a template. Every step is idempotent — re-run anytime to repair.
+That's the whole onboarding. The script creates five symlinks under `.claude/`, jq-merges a hooks fragment into `.claude/settings.json`, drops `post-merge` and `pre-commit` git hooks, and cleans up any legacy CLAUDE.md symlink left over from older versions of the harness. Every step is idempotent — re-run anytime to repair.
 
 ## What you get after onboarding
 
@@ -36,15 +37,17 @@ In your business repo:
 
 - `.claude/rules/`, `.claude/skills/`, `.claude/hooks/`, `.claude/commands/`, `.claude/knowledge/` → symlinks to this central repo
 - `.claude/settings.json` → wired to the five-layer gates (PreToolUse on `git commit`, PostToolUse on `Edit/Write`, Stop)
-- `CLAUDE.md` → symlink to a per-repo file in this central repo's `contexts/<slug>/`
 - `.git/hooks/post-merge` → auto-pulls this central repo on every `git pull` of the business repo
+- `.git/hooks/pre-commit` → runs the four GATEs for terminal commits as well as Claude-driven ones
 - `experiences.jsonl` → starts empty in your business repo; `/ec-scan` appends to it
+
+You write your own `CLAUDE.md` in the business repo — keep it short, project-specific, and free of duplicated harness boilerplate. See `docs/getting-started.md` for what to put in it.
 
 ## The four layers
 
 | Layer | What it does | Lives in |
 |---|---|---|
-| **L1 看得懂** | Make the codebase readable to AI (navigation table + 3-tier knowledge) | `contexts/`, `knowledge/`, `rules/` |
+| **L1 看得懂** | Make the codebase readable to AI (3-tier knowledge + per-repo CLAUDE.md) | `knowledge/`, `rules/`, your repo's `CLAUDE.md` |
 | **L2 学得会** | Turn corrections into compounding knowledge | `skills/experience-capture/`, business repo `experiences.jsonl` |
 | **L3 拦得住** | Mechanical gates — sensitive files, missing experience capture, untagged cross-repo edits | `hooks/pre-commit-guard.sh`, `hooks/stop-experience-capture-check.sh` |
 | **L4 验得了** | "Done" must compile + test + lint | `commands/verify.md`, `hooks/pre-commit-guard.sh` GATE-3/4 |
